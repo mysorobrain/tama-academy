@@ -26,6 +26,7 @@ pnpm dev
 - [CONTRIBUTING](./CONTRIBUTING.md) — règles équipe (RLS, ajout de table, next-intl × cache, etc.)
 - [Checklist JWT Clerk ↔ Supabase](./docs/clerk-supabase-jwt-checklist.md) — configuration Third-Party JWT
 - [Architecture auth (PR #3)](./docs/auth-architecture.md) — couches Clerk + proxy + JWT enfant + RLS user-aware
+- [Post-Sprint 0 backlog](./docs/post-sprint0-todo.md) — dette technique reportée (isolation envs, hardening tests, hygiène)
 - [.env.example](./.env.example) — toutes les variables d'environnement, dont celles différées
 
 ## Statut
