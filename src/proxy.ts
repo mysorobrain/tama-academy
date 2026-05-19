@@ -1,55 +1,48 @@
 /**
- * Proxy Next.js 16 — protection des routes via Clerk (espace adultes).
+ * Proxy Next.js 16 — protection des routes via Clerk (espace adultes) ET
+ * via JWT enfant custom (espace enfants /eleve/*).
  *
  * Successeur de `middleware.ts` (déprécié en Next 16). Détecté
  * automatiquement par le framework au chemin `src/proxy.ts`.
  *
- * SCOPE DU COMMIT 6 : Clerk uniquement (parents, instructors, admins).
- * La protection enfant (`/eleve/*`) arrive au commit 7 via un JWT
- * HS256 custom signé serveur, déposé en cookie httpOnly `tama_child_session`.
- * Les enfants n'ont PAS de compte Clerk (règle absolue de sécurité enfants
- * — RGPD < 13 ans + UX). En attendant le commit 7, `/eleve/*` est listé
- * en route publique pour éviter qu'un enfant qui ouvre son dojo soit
- * redirigé vers un sign-in Clerk inadapté. Au commit 7, cette entrée
- * disparaîtra et sera remplacée par un appel `verifyChildToken(...)`
- * dans le handler principal.
+ * Stratégie d'auth à 2 niveaux :
  *
- * Stratégie : tout est protégé sauf liste explicite de routes publiques.
- * C'est une posture defense-in-depth : oublier d'ajouter une nouvelle route
- * à la liste protégée serait dangereux. Oublier d'ajouter une nouvelle route
- * à la liste publique cause un sign-in flow inattendu mais zéro fuite de
- * données.
+ * 1. /eleve/* (espace enfants)
+ *    - Les enfants n'ont PAS de compte Clerk (règle absolue sécurité enfants,
+ *      RGPD < 13 ans + UX inadaptée du sign-in Clerk)
+ *    - Auth via JWT HS256 custom (cf. `lib/auth/child-session`) déposé en
+ *      cookie httpOnly `tama_child_session` par un Server Action côté parent
+ *    - Cookie absent ou JWT invalide / expiré → redirect vers / (la landing
+ *      proposera le flow de reconnexion via le parent — pas /sign-in qui
+ *      mènerait à un sign-up Clerk inadapté)
  *
- * Routes publiques :
- * - `/`                       : landing page
- * - `/sign-in(.*)`            : flow Clerk sign-in (catch-all pour SSO/MFA)
- * - `/sign-up(.*)`            : flow Clerk sign-up
- * - `/api/clerk/webhook`      : POST signé svix, DOIT être accessible sans
- *                               session Clerk (sinon Clerk reçoit 401 et ne
- *                               peut jamais nous pousser de user.created)
- * - `/api/health`             : healthcheck CI / Vercel / monitoring externe.
- *                               Pas de donnée sensible (cf. PR #2 health
- *                               route avec PII redaction).
- * - `/eleve(.*)`              : TEMPORAIRE C6 → C7. Cf. SCOPE ci-dessus.
+ * 2. /parent/*, /admin/*, et toutes les autres routes non publiques
+ *    - Auth Clerk (parents, instructors, admins)
+ *    - `auth.protect()` redirige automatiquement vers `/sign-in` avec
+ *      `?redirect_url=...` préservé
  *
- * Routes protégées :
- * Tout le reste. `auth.protect()` redirige vers `/sign-in` avec un
- * `?redirect_url=...` préservé automatiquement par Clerk.
+ * Routes publiques (whitelist explicite) :
+ * - `/`                  : landing page
+ * - `/sign-in(.*)`       : flow Clerk sign-in (catch-all SSO/MFA)
+ * - `/sign-up(.*)`       : flow Clerk sign-up
+ * - `/api/clerk/webhook` : POST signé svix, DOIT accepter sans session Clerk
+ * - `/api/health`        : healthcheck CI / Vercel / monitoring externe
  *
  * Vérification du rôle (parent / instructor / admin) PAS faite ici. Le JWT
  * Clerk ne contient pas notre colonne `users.role` (qui vit en BDD). Cette
  * vérif aura lieu dans chaque layout d'espace (server component qui lookup
- * la table `users` via getSupabaseClerkClient + RLS). Le proxy se limite à
- * « tu as une session Clerk valide » → pass, sinon redirect sign-in.
+ * la table `users` via getSupabaseClerkClient + RLS).
  *
- * Pas de logger Pino ici : le proxy s'exécute en runtime edge par défaut
- * sur Vercel (rapide, distribué, déployable au CDN). Pino dépend de modules
- * Node natifs (streams, worker_threads) indisponibles en edge. Les seules
- * erreurs intéressantes ici sont les redirections, déjà tracées par
- * Vercel/Sentry au niveau plateforme.
+ * Runtime : edge par défaut (Vercel CDN-deployable). Jose et crypto.subtle
+ * sont edge-compatibles, donc verifyChildToken fonctionne sans switch de
+ * runtime. Pas de Pino ici (Node natifs requis) — les redirections sont
+ * tracées par Vercel/Sentry au niveau plateforme.
  */
 
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+import { CHILD_SESSION_COOKIE_NAME, verifyChildToken } from "@/lib/auth/child-session";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -57,18 +50,35 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/clerk/webhook",
   "/api/health",
-  // TODO[commit-7] : remplacer cette entrée par une protection dédiée via
-  // verifyChildToken(req.cookies.get('tama_child_session')) HS256 dans le
-  // handler. /eleve/* NE DOIT PAS être protégé par Clerk — les enfants
-  // n'ont pas de compte Clerk (règle absolue sécurité enfants, RGPD).
-  "/eleve(.*)",
 ]);
+
+const isChildRoute = createRouteMatcher(["/eleve(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) {
-    return;
+    return undefined;
   }
+
+  if (isChildRoute(req)) {
+    const cookie = req.cookies.get(CHILD_SESSION_COOKIE_NAME);
+    if (!cookie?.value) {
+      // TODO[sprint-4]: rediriger vers /eleve/login (page dédiée qui propose
+      // le flow de reconnexion via QR code parent) plutôt que la landing /.
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    const payload = await verifyChildToken(cookie.value);
+    if (!payload) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    // TODO[sprint-3-4]: ajouter un check de scope ici (si pathname commence
+    // par /eleve/arena et payload.scope !== 'arena' → rediriger vers la
+    // route /eleve/<scope>). Pour Sprint 0, on laisse passer tout scope sur
+    // toute route /eleve/* — les pages elles-mêmes feront le check fin.
+    return undefined;
+  }
+
   await auth.protect();
+  return undefined;
 });
 
 export const config = {
