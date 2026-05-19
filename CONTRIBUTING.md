@@ -160,7 +160,37 @@ Checklist pour ajouter une nouvelle table (à cocher dans la PR description) :
 - [ ] Si la table contient des données enfants / PII : ajouter une entrée dans la routine de suppression RGPD (`POST /api/account/delete`).
 - [ ] Ligne ajoutée dans le `CHANGELOG.md` du sprint (nom de la table, finalité, sprint d'origine).
 
+## Authentification — où vivent les helpers (PR #3)
+
+| Couche                | Module                           | Quand l'utiliser                                                                     |
+| --------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| Identité Clerk        | `src/lib/auth/clerk.ts`          | `getClerkUserId`, `requireClerkUserId`, `getSupabaseJwt` — server-only.              |
+| Données Supabase RLS  | `src/lib/supabase/server.ts`     | `getSupabaseClerkClient()` injecte le JWT Clerk dans chaque requête.                 |
+| Bypass admin          | `src/lib/supabase/server.ts`     | `getSupabaseServiceRoleClient()` — webhooks / cron / scripts uniquement.             |
+| Session enfant        | `src/lib/auth/child-session.ts`  | `signChildToken` / `verifyChildToken` (HS256, cookie `tama_child_session`).          |
+| Proxy de routage      | `src/proxy.ts`                   | Protège `/parent`, `/admin`, `/formateur`, `/eleve/*` ; routes publiques explicites. |
+| Consentement parental | `src/lib/security/consent.ts`    | `*AsParent` (client user-aware injecté) ou `*System` (Drizzle bypass).               |
+| Redaction PII         | `src/lib/security/redaction.ts`  | `redactPII` (email/phone/JWT) + `redactStudent` (3 niveaux).                         |
+| Validation entrée     | `src/lib/security/validation.ts` | `validateInput(schema, input)` — throw `TamaAcademyError("INVALID_INPUT")`.          |
+| Erreurs typées        | `src/lib/errors.ts`              | `TamaAcademyError` (userMessage vs technicalMessage).                                |
+| Logger structuré      | `src/lib/logger.ts`              | `logger` / `childLogger({...})` — PII auto-redactée en prod.                         |
+
+Détails et diagramme : voir [docs/auth-architecture.md](./docs/auth-architecture.md).
+
+## Tests
+
+| Type           | Commande            | Cible                                                 |
+| -------------- | ------------------- | ----------------------------------------------------- |
+| Unit Vitest    | `pnpm vitest run`   | `tests/unit/**` — helpers, JWT, security, validation. |
+| E2E Playwright | `pnpm test:e2e`     | `tests/e2e/**` — proxy + RLS contre attaquant anon.   |
+| Lint           | `pnpm lint`         | ESLint flat config.                                   |
+| Typecheck      | `pnpm typecheck`    | `tsc --noEmit`.                                       |
+| Format         | `pnpm format:check` | Prettier (sans réécriture).                           |
+
+Sentinelle `server-only` : les modules `src/lib/auth/*`, `src/lib/supabase/*`, `src/lib/security/consent.ts`, `src/lib/logger.ts` portent l'import `"server-only"`. Pour les tester sous Vitest, le stub `tests/mocks/server-only.ts` est aliasé via `vitest.config.ts` — ne jamais importer ces modules depuis un composant `"use client"`.
+
 ## Ressources internes
 
 - Checklist JWT : [docs/clerk-supabase-jwt-checklist.md](./docs/clerk-supabase-jwt-checklist.md)
+- Architecture auth PR #3 : [docs/auth-architecture.md](./docs/auth-architecture.md)
 - Variables d'environnement : [.env.example](./.env.example)
