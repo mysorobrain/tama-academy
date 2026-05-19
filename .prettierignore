@@ -10,3 +10,7 @@ pnpm-lock.yaml
 next-env.d.ts
 .vercel/
 .turbo/
+
+# Migrations Drizzle : SQL préservé as-is (formatage drizzle-kit), snapshots
+# JSON générés par drizzle-kit (formatage propriétaire ≠ Prettier).
+src/lib/db/migrations/
