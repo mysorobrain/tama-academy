@@ -31,14 +31,14 @@ pnpm dev
 
 Repo en **Sprint 0 — Foundation** (scaffold initial). PRs successives :
 
-| PR | Branche | Objet |
-|---|---|---|
-| #1 | `scaffold-foundation` | Sprint 0 prep kit + infra (configs, lint, tests, design tokens) |
-| #2 | _à venir_ | Drizzle setup + schemas modulaires (users, children, consents, events) + RLS |
-| #3 | _à venir_ | Auth Clerk + proxy.ts + smoke RLS |
-| #4 | _à venir_ | Design system tokens + composants UI de base |
-| #5 | _à venir_ | i18n (next-intl) + locales fr/en/ar/es |
-| #6 | _à venir_ | CI GitHub Actions + branch protection + dashboards Sentry/PostHog |
+| PR  | Branche               | Objet                                                                        |
+| --- | --------------------- | ---------------------------------------------------------------------------- |
+| #1  | `scaffold-foundation` | Sprint 0 prep kit + infra (configs, lint, tests, design tokens)              |
+| #2  | _à venir_             | Drizzle setup + schemas modulaires (users, children, consents, events) + RLS |
+| #3  | _à venir_             | Auth Clerk + proxy.ts + smoke RLS                                            |
+| #4  | _à venir_             | Design system tokens + composants UI de base                                 |
+| #5  | _à venir_             | i18n (next-intl) + locales fr/en/ar/es                                       |
+| #6  | _à venir_             | CI GitHub Actions + branch protection + dashboards Sentry/PostHog            |
 
 ## Repo annexe
 

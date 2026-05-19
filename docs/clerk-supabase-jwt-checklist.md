@@ -37,13 +37,13 @@ Références utiles (à garder ouvert pendant la config) :
 
 ## 1. Clerk — JWT Template « supabase »
 
-| Étape | Détail | Fait |
-|--------|--------|------|
-| 1.1 | Dashboard Clerk → **JWT Templates** → **New template**. Nom exact : `supabase` (réutilisé tel quel dans `getToken({ template: 'supabase' })` et dans `CLERK_JWT_TEMPLATE_SUPABASE`). | [ ] |
-| 1.2 | **Signing algorithm : RS256 obligatoire** (pattern JWKS asymétrique, brief v2 §5). **Ne PAS** activer un champ « Custom signing key » avec un secret HS256 partagé : cette voie est désalignée avec Third-Party JWT (Supabase devrait vérifier le JWT via JWKS Clerk, pas via un secret commun). Si Clerk propose HS256 par défaut quelque part, c'est le mauvais champ. | [ ] |
-| 1.3 | **Claims du template** — copier ce JSON tel quel : <br><br><pre>{<br>  "aud": "authenticated",<br>  "role": "authenticated",<br>  "sub": "{{user.id}}"<br>}</pre><br>⚠️ Référence : brief Sprint 0 du 19/05/2026 + [doc Supabase × Clerk](https://supabase.com/docs/guides/auth/third-party/clerk). Si la convention officielle a évolué depuis cette date (par ex. `aud` différent, claim `role` renommé), **stopper et prévenir Claude** avant de continuer — ne **pas** improviser un autre format. | [ ] |
-| 1.4 | **Ne pas ajouter** d'autres claims (email, téléphone, métadonnées) en Sprint 0 — privacy by design. Si on doit enrichir plus tard, on le décide explicitement, on documente, et on revérifie les RLS. | [ ] |
-| 1.5 | Générer un JWT de test depuis le dashboard et le décoder sur [jwt.io](https://jwt.io) **sans coller le token dans un chat public ou un LLM tiers** : vérifier `iss` (= issuer Clerk attendu en §2), `aud=authenticated`, `role=authenticated`, `sub` (Clerk user ID texte), `exp`. | [ ] |
+| Étape | Détail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Fait |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 1.1   | Dashboard Clerk → **JWT Templates** → **New template**. Nom exact : `supabase` (réutilisé tel quel dans `getToken({ template: 'supabase' })` et dans `CLERK_JWT_TEMPLATE_SUPABASE`).                                                                                                                                                                                                                                                                                                                | [ ]  |
+| 1.2   | **Signing algorithm : RS256 obligatoire** (pattern JWKS asymétrique, brief v2 §5). **Ne PAS** activer un champ « Custom signing key » avec un secret HS256 partagé : cette voie est désalignée avec Third-Party JWT (Supabase devrait vérifier le JWT via JWKS Clerk, pas via un secret commun). Si Clerk propose HS256 par défaut quelque part, c'est le mauvais champ.                                                                                                                            | [ ]  |
+| 1.3   | **Claims du template** — copier ce JSON tel quel : <br><br><pre>{<br> "aud": "authenticated",<br> "role": "authenticated",<br> "sub": "{{user.id}}"<br>}</pre><br>⚠️ Référence : brief Sprint 0 du 19/05/2026 + [doc Supabase × Clerk](https://supabase.com/docs/guides/auth/third-party/clerk). Si la convention officielle a évolué depuis cette date (par ex. `aud` différent, claim `role` renommé), **stopper et prévenir Claude** avant de continuer — ne **pas** improviser un autre format. | [ ]  |
+| 1.4   | **Ne pas ajouter** d'autres claims (email, téléphone, métadonnées) en Sprint 0 — privacy by design. Si on doit enrichir plus tard, on le décide explicitement, on documente, et on revérifie les RLS.                                                                                                                                                                                                                                                                                               | [ ]  |
+| 1.5   | Générer un JWT de test depuis le dashboard et le décoder sur [jwt.io](https://jwt.io) **sans coller le token dans un chat public ou un LLM tiers** : vérifier `iss` (= issuer Clerk attendu en §2), `aud=authenticated`, `role=authenticated`, `sub` (Clerk user ID texte), `exp`.                                                                                                                                                                                                                  | [ ]  |
 
 **Point de contrôle :** si `sub` n'est pas l'ID Clerk attendu (par ex. un id externe, un email, un uuid Supabase), **toutes** les policies RLS basées sur `clerk_id = auth.jwt() ->> 'sub'` échoueront silencieusement.
 
@@ -51,13 +51,13 @@ Références utiles (à garder ouvert pendant la config) :
 
 ## 2. Supabase — faire confiance au JWT Clerk (Third-Party JWT)
 
-| Étape | Détail | Fait |
-|--------|--------|------|
-| 2.1 | **Supabase Dashboard** → **Authentication** → section dédiée à **Clerk** / **Third-Party Auth** / **JWT** comme décrit dans [la doc Supabase × Clerk](https://supabase.com/docs/guides/auth/third-party/clerk). | [ ] |
-| 2.2 | Renseigner l'**Issuer Clerk** (format `https://...clerk.accounts.dev` ou domaine personnalisé — **pas de slash final en trop**, match exact avec le `iss` du JWT vu en §1.5). | [ ] |
-| 2.3 | Si la doc demande un **JWKS URL** : le copier depuis Clerk (`{issuer}/.well-known/jwks.json` ou valeur indiquée par Clerk). C'est la clé asymétrique qui valide la signature **RS256** — pas de secret partagé. | [ ] |
-| 2.4 | **Une seule source de vérité** : si l'ancien projet a un « JWT Secret » custom HS256, le retirer / ne pas le configurer en parallèle du provider Clerk Third-Party. | [ ] |
-| 2.5 | Attendre la propagation (parfois quelques minutes après sauvegarde). | [ ] |
+| Étape | Détail                                                                                                                                                                                                          | Fait |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 2.1   | **Supabase Dashboard** → **Authentication** → section dédiée à **Clerk** / **Third-Party Auth** / **JWT** comme décrit dans [la doc Supabase × Clerk](https://supabase.com/docs/guides/auth/third-party/clerk). | [ ]  |
+| 2.2   | Renseigner l'**Issuer Clerk** (format `https://...clerk.accounts.dev` ou domaine personnalisé — **pas de slash final en trop**, match exact avec le `iss` du JWT vu en §1.5).                                   | [ ]  |
+| 2.3   | Si la doc demande un **JWKS URL** : le copier depuis Clerk (`{issuer}/.well-known/jwks.json` ou valeur indiquée par Clerk). C'est la clé asymétrique qui valide la signature **RS256** — pas de secret partagé. | [ ]  |
+| 2.4   | **Une seule source de vérité** : si l'ancien projet a un « JWT Secret » custom HS256, le retirer / ne pas le configurer en parallèle du provider Clerk Third-Party.                                             | [ ]  |
+| 2.5   | Attendre la propagation (parfois quelques minutes après sauvegarde).                                                                                                                                            | [ ]  |
 
 **Point de contrôle :** une erreur d'`issuer` ou de JWKS donne typiquement `401` / `JWT invalid` côté client Supabase alors que `anon` / `service_role` fonctionnent encore.
 
@@ -65,12 +65,12 @@ Références utiles (à garder ouvert pendant la config) :
 
 ## 3. Application — relier Clerk et Supabase dans le code
 
-| Étape | Détail | Fait |
-|--------|--------|------|
-| 3.1 | Client Supabase créé avec `accessToken: async () => (await getToken({ template: process.env.CLERK_JWT_TEMPLATE_SUPABASE })) ?? null` — nom du template **identique** à §1.1. | [ ] |
-| 3.2 | Ne **jamais** exposer `service_role` dans le navigateur ; réservé au **serveur**, migrations CI, scripts admin. | [ ] |
-| 3.3 | Vérifier les clients **Server** vs **Browser** : même logique de token, pas de duplication incohérente. | [ ] |
-| 3.4 | Logs côté serveur : **métadonnées non-PII uniquement** (`token_present: boolean`, `clerk_user_id` interne — pas d'email, pas de prénom enfant). | [ ] |
+| Étape | Détail                                                                                                                                                                       | Fait |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 3.1   | Client Supabase créé avec `accessToken: async () => (await getToken({ template: process.env.CLERK_JWT_TEMPLATE_SUPABASE })) ?? null` — nom du template **identique** à §1.1. | [ ]  |
+| 3.2   | Ne **jamais** exposer `service_role` dans le navigateur ; réservé au **serveur**, migrations CI, scripts admin.                                                              | [ ]  |
+| 3.3   | Vérifier les clients **Server** vs **Browser** : même logique de token, pas de duplication incohérente.                                                                      | [ ]  |
+| 3.4   | Logs côté serveur : **métadonnées non-PII uniquement** (`token_present: boolean`, `clerk_user_id` interne — pas d'email, pas de prénom enfant).                              | [ ]  |
 
 ---
 
@@ -117,11 +117,11 @@ CREATE POLICY users_select_self ON users
 
 - [ ] **Pas de `USING (true)`** sauf table explicitement publique ET review sécu tracée.
 - [ ] **Pas de policy `FOR ALL`** sans clause `WITH CHECK` distincte si la table accepte des INSERT / UPDATE depuis l'utilisateur.
-- [ ] **Pas d'UPDATE auto-élévation** : un utilisateur ne doit pas pouvoir modifier son propre champ `role` (voir §5 scénario *escalade de privilèges*). La policy UPDATE doit explicitement **exclure** les colonnes de privilège ou être complétée par un trigger / colonne en `GENERATED ALWAYS` côté serveur.
+- [ ] **Pas d'UPDATE auto-élévation** : un utilisateur ne doit pas pouvoir modifier son propre champ `role` (voir §5 scénario _escalade de privilèges_). La policy UPDATE doit explicitement **exclure** les colonnes de privilège ou être complétée par un trigger / colonne en `GENERATED ALWAYS` côté serveur.
 
 ### 4.4 — Tests
 
-- [ ] Test **SELECT / INSERT / UPDATE / DELETE** pour un cas autorisé et un cas refusé (voir `CONTRIBUTING.md` → *Tester la RLS*).
+- [ ] Test **SELECT / INSERT / UPDATE / DELETE** pour un cas autorisé et un cas refusé (voir `CONTRIBUTING.md` → _Tester la RLS_).
 
 ---
 
@@ -137,12 +137,12 @@ CREATE POLICY users_select_self ON users
 
 ## 6. Erreurs fréquentes (tri rapide)
 
-| Symptôme | Piste |
-|----------|--------|
-| « Invalid JWT » / 401 Supabase | Issuer / JWKS URL / algorithme (doit être **RS256**, pas HS256) ; `aud` ou `role` manquants dans le template Clerk §1.3. |
-| 0 ligne alors que les données existent | **Cause n°1 :** policy basée sur `auth.uid()` au lieu de `auth.jwt() ->> 'sub'` (`auth.uid()` est `null` avec JWKS). **Cause n°2 :** template Clerk pas appliqué (token sans `sub` Clerk, ou pas envoyé). |
-| Données d'un autre utilisateur visibles | **Incident sévérité max** : policy manquante, `USING (true)`, bypass `service_role` côté client, jointure laxe. Bloquer la PR, ouvrir un incident. |
-| Escalade : un user devient admin | Policy UPDATE trop permissive (ex. `WITH CHECK (true)`) ; colonne `role` modifiable côté user. Patcher + test `@security` immédiat. |
+| Symptôme                                | Piste                                                                                                                                                                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| « Invalid JWT » / 401 Supabase          | Issuer / JWKS URL / algorithme (doit être **RS256**, pas HS256) ; `aud` ou `role` manquants dans le template Clerk §1.3.                                                                                  |
+| 0 ligne alors que les données existent  | **Cause n°1 :** policy basée sur `auth.uid()` au lieu de `auth.jwt() ->> 'sub'` (`auth.uid()` est `null` avec JWKS). **Cause n°2 :** template Clerk pas appliqué (token sans `sub` Clerk, ou pas envoyé). |
+| Données d'un autre utilisateur visibles | **Incident sévérité max** : policy manquante, `USING (true)`, bypass `service_role` côté client, jointure laxe. Bloquer la PR, ouvrir un incident.                                                        |
+| Escalade : un user devient admin        | Policy UPDATE trop permissive (ex. `WITH CHECK (true)`) ; colonne `role` modifiable côté user. Patcher + test `@security` immédiat.                                                                       |
 
 ---
 

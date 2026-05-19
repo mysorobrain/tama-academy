@@ -31,13 +31,13 @@ Avec **Next.js 16**, les directives `use cache`, `cacheLife`, `cacheTag` créent
 
 ```tsx
 // app/[locale]/marketing/page.tsx
-'use cache';
+"use cache";
 
-import { getTranslations } from 'next-intl/server';
+import { getTranslations } from "next-intl/server";
 
 export default async function Page() {
-  const t = await getTranslations('marketing');
-  return <h1>{t('hero.title')}</h1>;
+  const t = await getTranslations("marketing");
+  return <h1>{t("hero.title")}</h1>;
 }
 ```
 
@@ -48,8 +48,8 @@ Sans précaution, le premier visiteur **FR** met le contenu FR en cache pour la 
 1. **`cacheTag` localisé** sur chaque route cachée :
 
    ```ts
-   'use cache';
-   import { cacheTag } from 'next/cache';
+   "use cache";
+   import { cacheTag } from "next/cache";
 
    export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
      const { locale } = await params;
@@ -78,10 +78,10 @@ La **Row Level Security** est une exigence **non négociable** : toute nouvelle 
 
 ### Stratégie de test
 
-| Couche | Outil | Rôle |
-|--------|--------|------|
-| Rapide | **Vitest + 2 clients Supabase** (session A vs session B) | Vérifier qu'une policy refuse bien l'accès croisé |
-| Bloquant CI | **Playwright E2E** (`@critical`, `@security`) | Parcours réaliste : utilisateur A ne voit pas / ne modifie pas les données de B |
+| Couche      | Outil                                                    | Rôle                                                                            |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Rapide      | **Vitest + 2 clients Supabase** (session A vs session B) | Vérifier qu'une policy refuse bien l'accès croisé                               |
+| Bloquant CI | **Playwright E2E** (`@critical`, `@security`)            | Parcours réaliste : utilisateur A ne voit pas / ne modifie pas les données de B |
 
 ### Jeu de données minimal
 
