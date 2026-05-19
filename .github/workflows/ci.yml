@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+  # Trigger sur toute PR ouverte vers n'importe quelle branche du repo (pas
+  # juste main). Nécessaire pour les PRs stackées (ex: PR #2 sur PR #1) :
+  # le CI doit valider la branche enfant même si elle ne cible pas main
+  # directement.
   pull_request:
-    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
