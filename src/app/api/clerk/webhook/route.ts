@@ -19,14 +19,11 @@
  * Runtime : Node.js (svix dépend de `crypto` natif Node, pas compatible Edge).
  * Cache   : dynamic forcé (route mutative).
  *
- * TODO[commit-8] : les `console.*` ci-dessous (avec eslint-disable scopé) sont
- * volontairement temporaires. Le commit 8 introduit le logger Pino centralisé
- * (PII redaction, contextes scoped, niveaux configurables via LOG_LEVEL) et
- * remplacera tous les `console.*` de ce fichier. Le disable est nominatif
- * pour qu'on ne l'oublie pas — il sera retiré au commit 8.
+ * Logging : Pino centralisé (cf. lib/logger). Le child logger porte un binding
+ * `feature: 'clerk-webhook'` pour faciliter le filtrage en prod (Sentry,
+ * Datadog, Vercel Log Drains). Le svixId est ajouté pour corréler avec les
+ * retries Clerk côté dashboard.
  */
-
-/* eslint-disable no-console -- TODO[commit-8] : migration vers logger Pino. */
 
 import "server-only";
 
@@ -34,6 +31,7 @@ import { Webhook } from "svix";
 
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
+import { childLogger } from "@/lib/logger";
 
 import type { UserJSON, WebhookEvent } from "@clerk/nextjs/server";
 
@@ -44,9 +42,11 @@ export const dynamic = "force-dynamic";
 const SVIX_HEADERS = ["svix-id", "svix-timestamp", "svix-signature"] as const;
 
 export async function POST(req: Request): Promise<Response> {
+  const log = childLogger({ feature: "clerk-webhook" });
+
   const secret = process.env.CLERK_WEBHOOK_SECRET;
   if (!secret) {
-    console.error("[clerk-webhook] CLERK_WEBHOOK_SECRET non configuré");
+    log.error("CLERK_WEBHOOK_SECRET non configuré");
     return Response.json({ error: "Server misconfiguration" }, { status: 500 });
   }
 
@@ -59,6 +59,9 @@ export async function POST(req: Request): Promise<Response> {
     headers[name] = value;
   }
 
+  const svixId = headers["svix-id"];
+  const reqLog = log.child({ svixId });
+
   const body = await req.text();
   const wh = new Webhook(secret);
 
@@ -66,31 +69,30 @@ export async function POST(req: Request): Promise<Response> {
   try {
     event = wh.verify(body, headers) as WebhookEvent;
   } catch (err) {
-    console.warn("[clerk-webhook] signature svix invalide", {
-      svixId: headers["svix-id"],
-      reason: err instanceof Error ? err.message : "unknown",
-    });
+    reqLog.warn(
+      { reason: err instanceof Error ? err.message : "unknown" },
+      "signature svix invalide",
+    );
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   try {
     switch (event.type) {
       case "user.created":
-        await handleUserCreated(event.data);
+        await handleUserCreated(event.data, reqLog.child({ type: event.type }));
         break;
       default:
-        console.info("[clerk-webhook] event ignoré (non géré)", {
-          type: event.type,
-          svixId: headers["svix-id"],
-        });
+        reqLog.info({ type: event.type }, "event ignoré (non géré)");
         break;
     }
   } catch (err) {
-    console.error("[clerk-webhook] erreur traitement event", {
-      type: event.type,
-      svixId: headers["svix-id"],
-      reason: err instanceof Error ? err.message : "unknown",
-    });
+    reqLog.error(
+      {
+        type: event.type,
+        reason: err instanceof Error ? err.message : "unknown",
+      },
+      "erreur traitement event",
+    );
     return Response.json({ error: "Internal error" }, { status: 500 });
   }
 
@@ -113,14 +115,15 @@ export async function POST(req: Request): Promise<Response> {
  * n'a pas de session Clerk (pas d'auth.jwt() ->> 'sub' disponible), mais le
  * payload est cryptographiquement signé donc la confiance vient de svix.
  */
-async function handleUserCreated(data: UserJSON): Promise<void> {
+async function handleUserCreated(
+  data: UserJSON,
+  log: ReturnType<typeof childLogger>,
+): Promise<void> {
   const primaryEmailId = data.primary_email_address_id;
   const primaryEmail = data.email_addresses?.find((e) => e.id === primaryEmailId)?.email_address;
 
   if (!primaryEmail) {
-    console.warn("[clerk-webhook] user.created sans email primaire, skipped", {
-      clerkId: data.id,
-    });
+    log.warn({ clerkId: data.id }, "user.created sans email primaire, skipped");
     return;
   }
 
@@ -137,7 +140,5 @@ async function handleUserCreated(data: UserJSON): Promise<void> {
     })
     .onConflictDoNothing({ target: users.clerkId });
 
-  console.info("[clerk-webhook] user créé (ou déjà existant)", {
-    clerkId: data.id,
-  });
+  log.info({ clerkId: data.id }, "user créé (ou déjà existant)");
 }
