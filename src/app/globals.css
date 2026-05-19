@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Tokens design Tama Academy (placeholder Sprint 0).
+   Le set complet (9 ceintures, registres Kids/Academy, 3 régions Soroban Royaume)
+   atterrira en PR #5 dans src/styles/tokens.css. */
+@theme {
+  --color-brand: #FB923C;
+}
+
+html,
+body {
+  background: white;
+  color: black;
+}
