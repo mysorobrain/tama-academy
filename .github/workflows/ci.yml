@@ -23,6 +23,28 @@ env:
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:6543/placeholder
   DATABASE_DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
+  # ----- PR #3 — Clerk auth + JWT enfant + RLS (Supabase REST) -----
+  # Le middleware Clerk (src/proxy.ts) valide pub key + secret key au boot.
+  # pk_test_* est publique par design (Clerk l'embed dans le bundle browser),
+  # passée via secret uniquement pour faciliter la rotation vers une instance
+  # Clerk CI dédiée (cf. docs/post-sprint0-todo.md).
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+  CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+  # Aucun test E2E ne hit /api/clerk/webhook. Secret factice ≥ 32 chars
+  # acceptable (svix valide la longueur au runtime, pas la signature ici).
+  CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
+
+  # JWT enfant — secret généré spécifiquement pour CI (jamais partagé avec
+  # dev local ni Vercel). Lazy-loaded par src/lib/auth/child-session.ts.
+  JWT_CHILD_SECRET: ${{ secrets.JWT_CHILD_SECRET }}
+
+  # Supabase — utilisé par tests/e2e/rls.spec.ts qui tape la REST anon
+  # directement (4 scénarios attaquant). Pas de service_role en CI : les
+  # tests actuels ne créent rien. Backlog : projet Supabase staging dédié
+  # (cf. docs/post-sprint0-todo.md).
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
 jobs:
   quality:
     name: Quality (lint + typecheck + unit + build)
