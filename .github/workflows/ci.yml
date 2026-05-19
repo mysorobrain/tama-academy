@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+  # Trigger sur toute PR ouverte vers n'importe quelle branche du repo (pas
+  # juste main). Nécessaire pour les PRs stackées (ex: PR #2 sur PR #1) :
+  # le CI doit valider la branche enfant même si elle ne cible pas main
+  # directement.
   pull_request:
-    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,6 +16,12 @@ concurrency:
 env:
   HUSKY: 0
   CI: true
+  # Placeholders pour le build CI (jamais une connexion réelle n'est tentée).
+  # postgres.js ne se connecte qu'à la première requête → build ok.
+  # Toute requête à la BDD en CI échouerait avec une erreur claire, ce qui
+  # est le comportement souhaité (les tests E2E actuels ne touchent pas la DB).
+  DATABASE_URL: postgresql://placeholder:placeholder@localhost:6543/placeholder
+  DATABASE_DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
   quality:

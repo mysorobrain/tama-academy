@@ -21,12 +21,19 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:check": "drizzle-kit check",
     "prepare": "husky"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.6",
+    "postgres": "^3.4.9",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.0",
@@ -37,6 +44,8 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.0",
     "eslint-config-next": "^16.2.6",
     "eslint-config-prettier": "^10.1.5",
