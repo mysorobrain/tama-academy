@@ -1,0 +1,28 @@
+-- =============================================================================
+-- 0002_harden_trigger_function.sql — Tama Academy Sprint 0
+-- =============================================================================
+-- Fix du warning Supabase Security Advisor :
+--   function_search_path_mutable (level: WARN, category: SECURITY)
+--   Function `public.tama_set_updated_at` has a role mutable search_path
+--
+-- Pourquoi c'est une vraie issue : si un attaquant a CREATE sur un schema
+-- présent dans le search_path résolu au runtime, il peut shadow `now()` ou
+-- autre builtin avec sa propre fonction. Pour un trigger qui s'exécute sur
+-- INSERT/UPDATE de tables sensibles (users, children), c'est une surface
+-- d'attaque réelle même si la fonction n'est pas SECURITY DEFINER.
+--
+-- Fix strict (recommandé par Supabase pour les fonctions trigger) :
+--   SET search_path = ''
+-- Force tous les appels de fonctions/objets dans la fonction à être
+-- qualifiés explicitement par leur schema (pg_catalog.now(), public.users…).
+--
+-- Le code de la fonction (NEW.updated_at := now()) est déjà compatible :
+-- `now()` est une fonction de pg_catalog qui est toujours dans le scope
+-- (pg_catalog est implicite, jamais désactivable). Aucun changement de
+-- comportement, juste un durcissement.
+--
+-- Idempotent : ALTER FUNCTION ... SET ... est idempotent côté Postgres
+-- (réécrit le paramètre, jamais d'erreur si déjà set).
+-- =============================================================================
+
+ALTER FUNCTION public.tama_set_updated_at() SET search_path = '';
