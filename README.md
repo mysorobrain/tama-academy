@@ -23,6 +23,7 @@ pnpm dev
 
 ## Documentation
 
+- [CONTEXT](./CONTEXT.md) — état courant projet + récap Sprint 0 + jalon Sprint 1 (source de vérité)
 - [CONTRIBUTING](./CONTRIBUTING.md) — règles équipe (RLS, ajout de table, next-intl × cache, etc.)
 - [Checklist JWT Clerk ↔ Supabase](./docs/clerk-supabase-jwt-checklist.md) — configuration Third-Party JWT
 - [Architecture auth (PR #3)](./docs/auth-architecture.md) — couches Clerk + proxy + JWT enfant + RLS user-aware
@@ -37,10 +38,9 @@ Repo en **Sprint 0 — Foundation** (scaffold initial). PRs successives :
 | --- | -------------------------- | ----------------------------------------------------------------------------------------- |
 | #1  | `scaffold-foundation`      | Sprint 0 prep kit + infra (configs, lint, tests, design tokens) — **mergée**              |
 | #2  | `feat/drizzle-schemas`     | Drizzle setup + schemas modulaires (users, children, consents, events) + RLS — **mergée** |
-| #3  | `feat/auth-clerk-supabase` | Auth Clerk + JWT enfant + proxy.ts + RLS user-aware + security helpers — **en cours**     |
-| #4  | _à venir_                  | Design system tokens + composants UI de base                                              |
-| #5  | _à venir_                  | i18n (next-intl) + locales fr/en/ar/es                                                    |
-| #6  | _à venir_                  | CI GitHub Actions + branch protection + dashboards Sentry/PostHog                         |
+| #3  | `feat/auth-clerk-supabase` | Auth Clerk + JWT enfant + proxy.ts + RLS user-aware + security helpers — **mergée**       |
+
+**Sprint 0 terminé le 19 mai 2026** (tag `sprint-0-complete`). Suite Sprint 1 → cf. [CONTEXT.md](./CONTEXT.md).
 
 ## Repo annexe
 
