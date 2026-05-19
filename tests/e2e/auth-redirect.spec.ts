@@ -56,8 +56,13 @@ test.describe("@critical Auth redirects", () => {
     expect(response.status()).toBe(200);
   });
 
-  test("public route /api/health répond 200", async ({ request }) => {
-    const response = await request.get("/api/health");
-    expect(response.status()).toBe(200);
+  test("public route /api/health n'est pas bloquée par le proxy", async ({ request }) => {
+    // On vérifie que le proxy laisse passer la route (pas de 3xx redirect),
+    // pas que la BDD répond. En CI, DATABASE_URL est un placeholder et le
+    // SELECT 1 échoue → la route renvoie 503 (handler exécuté = proxy OK).
+    // En local avec une vraie BDD → 200. Les deux prouvent que la route est
+    // publique.
+    const response = await request.get("/api/health", { maxRedirects: 0 });
+    expect([200, 503]).toContain(response.status());
   });
 });
