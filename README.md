@@ -25,20 +25,22 @@ pnpm dev
 
 - [CONTRIBUTING](./CONTRIBUTING.md) — règles équipe (RLS, ajout de table, next-intl × cache, etc.)
 - [Checklist JWT Clerk ↔ Supabase](./docs/clerk-supabase-jwt-checklist.md) — configuration Third-Party JWT
+- [Architecture auth (PR #3)](./docs/auth-architecture.md) — couches Clerk + proxy + JWT enfant + RLS user-aware
+- [Post-Sprint 0 backlog](./docs/post-sprint0-todo.md) — dette technique reportée (isolation envs, hardening tests, hygiène)
 - [.env.example](./.env.example) — toutes les variables d'environnement, dont celles différées
 
 ## Statut
 
 Repo en **Sprint 0 — Foundation** (scaffold initial). PRs successives :
 
-| PR  | Branche               | Objet                                                                        |
-| --- | --------------------- | ---------------------------------------------------------------------------- |
-| #1  | `scaffold-foundation` | Sprint 0 prep kit + infra (configs, lint, tests, design tokens)              |
-| #2  | _à venir_             | Drizzle setup + schemas modulaires (users, children, consents, events) + RLS |
-| #3  | _à venir_             | Auth Clerk + proxy.ts + smoke RLS                                            |
-| #4  | _à venir_             | Design system tokens + composants UI de base                                 |
-| #5  | _à venir_             | i18n (next-intl) + locales fr/en/ar/es                                       |
-| #6  | _à venir_             | CI GitHub Actions + branch protection + dashboards Sentry/PostHog            |
+| PR  | Branche                    | Objet                                                                                     |
+| --- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| #1  | `scaffold-foundation`      | Sprint 0 prep kit + infra (configs, lint, tests, design tokens) — **mergée**              |
+| #2  | `feat/drizzle-schemas`     | Drizzle setup + schemas modulaires (users, children, consents, events) + RLS — **mergée** |
+| #3  | `feat/auth-clerk-supabase` | Auth Clerk + JWT enfant + proxy.ts + RLS user-aware + security helpers — **en cours**     |
+| #4  | _à venir_                  | Design system tokens + composants UI de base                                              |
+| #5  | _à venir_                  | i18n (next-intl) + locales fr/en/ar/es                                                    |
+| #6  | _à venir_                  | CI GitHub Actions + branch protection + dashboards Sentry/PostHog                         |
 
 ## Repo annexe
 

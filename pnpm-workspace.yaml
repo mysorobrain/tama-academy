@@ -2,8 +2,17 @@ onlyBuiltDependencies:
   - sharp
   - unrs-resolver
   - esbuild
+  - "@clerk/shared"
 
 allowBuilds:
   sharp: true
   unrs-resolver: true
   esbuild: true
+  "@clerk/shared": true
+
+# Exemptions du minimumReleaseAge (pnpm 11 attend par défaut qu'un package
+# soit publié depuis X jours avant install — protection chaîne d'approvi-
+# sionnement). Les versions ci-dessous sont récentes mais validées par nous.
+minimumReleaseAgeExclude:
+  - "@clerk/shared@4.12.1"
+  - svix@1.94.0
