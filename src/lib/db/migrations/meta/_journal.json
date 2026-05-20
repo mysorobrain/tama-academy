@@ -29,6 +29,13 @@
       "when": 1779559200000,
       "tag": "0003_rls_user_aware",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779576339000,
+      "tag": "0004_perf_rls_initplan_and_fk_indexes",
+      "breakpoints": true
     }
   ]
 }

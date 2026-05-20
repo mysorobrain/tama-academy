@@ -128,6 +128,30 @@ Dette technique et items consciemment reportés du Sprint 0 vers les sprints sui
 
 ---
 
+## Process incidents
+
+Section dédiée aux **incidents de process** (pas de dette technique sur le code) — leçons apprises pendant les sprints qui doivent être mémorisées pour ne pas se reproduire. Format : date + contexte court + règle préventive à respecter strictement.
+
+### PI-001 — Migration appliquée d'abord en BDD via MCP, réconciliée rétroactivement dans Drizzle (2026-05-19, PR #4)
+
+**Contexte** : pendant la session d'audit post-Sprint 0 du 2026-05-19, les 11 advisors `auth_rls_initplan` et 2 advisors `unindexed_foreign_keys` remontés par le Supabase Database Linter ont été corrigés via `apply_migration` MCP **directement sur le projet `mrioviqfnkcqqnwxwlqn`**, AVANT que le SQL correspondant existe dans `src/lib/db/migrations/`. La réconciliation s'est faite rétroactivement le lendemain (création de `0004_perf_rls_initplan_and_fk_indexes.sql` + mise à jour manuelle de `meta/_journal.json` pour ajouter aussi les entrées manquantes 0002 et 0003 qui avaient déjà subi le même décalage en Sprint 0).
+
+**Pourquoi c'est un anti-pattern** :
+
+- Le source-of-truth Drizzle (fichier migration + `_journal.json`) ne reflète plus l'état réel de la BDD.
+- Si un autre dev fait `pnpm db:generate` pendant la fenêtre de désynchronisation, il génère une migration qui réapplique ou contredit les changements MCP.
+- La PR n'est plus auditable atomiquement : on commit du SQL "déjà appliqué" — l'historique git ne décrit plus la séquence réelle d'exécution.
+- En cas de rollback (`git revert` du commit migration), la BDD n'est pas rollback automatiquement.
+- En CI sur un projet Supabase staging/prod neuf (cf. items 1, 3 de ce backlog), `pnpm db:migrate` se base uniquement sur les fichiers migration et `_journal.json` — un fichier manquant = un état BDD divergent silencieusement.
+
+**Règle préventive à respecter strictement post-Sprint 0** :
+
+> **Discipline `pnpm db:migrate` first** : toute modification de schéma ou de policy RLS commence OBLIGATOIREMENT par (a) écrire le fichier `XXXX_<description>.sql` dans `src/lib/db/migrations/`, (b) tester localement avec `pnpm db:migrate` contre un projet Supabase dev, (c) committer et seulement APRÈS pousser via CI ou via `apply_migration` MCP sur staging/prod. **`apply_migration` MCP n'est jamais utilisé sur un projet partagé sans qu'un fichier source ait été commité au préalable.**
+
+**Application** : ajouter cette règle au `CONTRIBUTING.md` §RLS et au `CLAUDE.md` workspace pour qu'elle remonte dans le contexte de toute conversation Cursor future. À faire en début de Sprint 1.
+
+---
+
 ## Done
 
 _(vide pour l'instant — chaque item résolu vient ici avec date + n° issue + n° PR de résolution)_
