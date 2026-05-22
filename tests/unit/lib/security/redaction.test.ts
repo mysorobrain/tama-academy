@@ -59,16 +59,16 @@ describe("redactStudent", () => {
     firstName: "Léo",
     lastInitial: "A",
     birthDate: new Date("2019-05-12"),
-    beltCode: "NP1" as const,
+    levelCode: "NP1" as const,
     parentId: "parent-uuid-456",
   };
 
-  it("public : retourne uniquement id, initiale prénom, beltCode", () => {
+  it("public : retourne uniquement id, initiale prénom, levelCode", () => {
     const out = redactStudent(fullStudent, "public");
     expect(out).toEqual({
       id: "child-uuid-123",
       firstName: "L.",
-      beltCode: "NP1",
+      levelCode: "NP1",
     });
     expect(out).not.toHaveProperty("birthDate");
     expect(out).not.toHaveProperty("parentId");
@@ -80,7 +80,7 @@ describe("redactStudent", () => {
       id: "child-uuid-123",
       firstName: "L.",
       lastInitial: "A",
-      beltCode: "NP1",
+      levelCode: "NP1",
     });
     expect(out).not.toHaveProperty("birthDate");
   });
@@ -96,11 +96,11 @@ describe("redactStudent", () => {
       firstName?: string;
       lastInitial?: string;
       birthDate?: Date;
-      beltCode?: string;
+      levelCode?: string;
       parentId?: string;
-    } = { id: "abc", beltCode: "NP1" };
+    } = { id: "abc", levelCode: "NP1" };
     const out = redactStudent(partial, "public");
-    expect(out).toEqual({ id: "abc", beltCode: "NP1" });
+    expect(out).toEqual({ id: "abc", levelCode: "NP1" });
     expect(out.firstName).toBeUndefined();
   });
 });

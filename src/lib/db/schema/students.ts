@@ -1,13 +1,7 @@
 import { boolean, date, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
+import { levelCodes, pedagogyLevels } from "./pedagogy-levels";
 import { users } from "./users";
-
-/**
- * Codes ceintures (BDD) ↔ noms UI mappés via formatLevelAsBelt (helper PR #5).
- * Cf. rule 02 (Méthode Tama) §"Mapping codes BDD ↔ Ceintures".
- */
-export const beltCodes = ["NP1", "NP2", "NV1", "NV2", "NV3", "M1", "M2", "M3", "M4", "M5"] as const;
-export type BeltCode = (typeof beltCodes)[number];
 
 /**
  * Table `children` — un enfant par ligne. Le parent (Clerk-authentifié) crée
@@ -21,6 +15,12 @@ export type BeltCode = (typeof beltCodes)[number];
  *
  * `birth_date` en mode 'string' : Drizzle retourne et accepte une date ISO
  * (YYYY-MM-DD) plutôt qu'un Date JS (évite les timezones drama).
+ *
+ * `level_code` — anciennement `belt_code` (legacy Sprint 0). Renommé en
+ * Sprint 1 J1 (migration 0006) car la colonne contient des codes de niveaux
+ * (NP1…M5), pas des codes de ceintures (cf. decision ACM-1, mapping 10 → 9
+ * via formatLevelAsBelt). FK vers pedagogy_levels(code) pour intégrité
+ * référentielle au seed J3.
  */
 export const children = pgTable("children", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -31,7 +31,10 @@ export const children = pgTable("children", {
   /** Initiale du nom de famille uniquement (RGPD : privacy enfant). */
   lastInitial: text("last_initial").notNull(),
   birthDate: date("birth_date", { mode: "string" }).notNull(),
-  beltCode: text("belt_code", { enum: beltCodes }).notNull().default("NP1"),
+  levelCode: text("level_code", { enum: levelCodes })
+    .notNull()
+    .default("NP1")
+    .references(() => pedagogyLevels.code, { onDelete: "restrict" }),
   /** Mode zen activé par le parent : pas de leaderboards, pas de compétition. */
   zenMode: boolean("zen_mode").notNull().default(false),
   dataJson: jsonb("data_json").$type<Record<string, unknown>>().notNull().default({}),
@@ -41,3 +44,7 @@ export const children = pgTable("children", {
 
 export type Child = typeof children.$inferSelect;
 export type NewChild = typeof children.$inferInsert;
+
+// Re-export `LevelCode` pour rétro-compatibilité des imports historiques qui
+// pointaient sur students.ts. Le type est défini dans pedagogy-levels.ts.
+export { type LevelCode } from "./pedagogy-levels";
