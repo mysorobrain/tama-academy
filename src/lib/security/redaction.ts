@@ -77,7 +77,7 @@ export function redactStudent<
     firstName?: string;
     lastInitial?: string;
     birthDate?: string | Date;
-    beltCode?: string;
+    levelCode?: string;
     parentId?: string;
   },
 >(student: T, level: RedactionLevel): Partial<T> {
@@ -86,14 +86,14 @@ export function redactStudent<
       return {
         id: student.id,
         firstName: student.firstName ? student.firstName.charAt(0) + "." : undefined,
-        beltCode: student.beltCode,
+        levelCode: student.levelCode,
       } as Partial<T>;
     case "authenticated":
       return {
         id: student.id,
         firstName: student.firstName ? student.firstName.charAt(0) + "." : undefined,
         lastInitial: student.lastInitial,
-        beltCode: student.beltCode,
+        levelCode: student.levelCode,
       } as Partial<T>;
     case "owner":
       return { ...student };

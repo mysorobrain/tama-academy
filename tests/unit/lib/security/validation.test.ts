@@ -7,7 +7,7 @@ import { validateInput } from "@/lib/security/validation";
 const StudentSchema = z.object({
   firstName: z.string().min(1).max(50),
   birthDate: z.string().date(),
-  beltCode: z.enum(["NP1", "NP2", "NV1"]),
+  levelCode: z.enum(["NP1", "NP2", "NV1"]),
 });
 
 describe("validateInput", () => {
@@ -15,14 +15,14 @@ describe("validateInput", () => {
     const input = {
       firstName: "Léo",
       birthDate: "2019-05-12",
-      beltCode: "NP1" as const,
+      levelCode: "NP1" as const,
     };
     const result = validateInput(StudentSchema, input, "test-student");
     expect(result).toEqual(input);
   });
 
   it("throws TamaAcademyError(INVALID_INPUT) si l'input est invalide", () => {
-    const input = { firstName: "", birthDate: "not-a-date", beltCode: "INVALID" };
+    const input = { firstName: "", birthDate: "not-a-date", levelCode: "INVALID" };
     expect(() => validateInput(StudentSchema, input, "test-student")).toThrow(TamaAcademyError);
   });
 
