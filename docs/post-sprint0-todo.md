@@ -152,6 +152,36 @@ Section dédiée aux **incidents de process** (pas de dette technique sur le cod
 
 ---
 
+### PI-002 — Tracker `supabase_migrations.schema_migrations` désynchronisé du tracker Drizzle (2026-05-22, audit pré-J2)
+
+**Contexte** : audit Claude pré-J2 du 2026-05-22 (avant le démarrage du Sprint 1 J2). Le schéma BDD était correct (9 tables, RLS partout, FK pédagogie OK, rename `children.level_code` appliqué), mais `list_migrations` MCP ne retournait qu'**1 entrée** (`0004_perf_rls_initplan_and_fk_indexes`) au lieu des 7 attendues. Pendant ce temps, `drizzle.__drizzle_migrations` contenait bien les 7 migrations (0000→0006). Les deux trackers vivaient leur propre vie.
+
+**Cause racine** : deux pipelines d'application coexistent sans sync du tracker miroir Supabase.
+
+- `pnpm db:migrate` (Drizzle) écrit dans `drizzle.__drizzle_migrations` mais **jamais** dans `supabase_migrations.schema_migrations`.
+- `apply_migration` MCP écrit dans `supabase_migrations.schema_migrations` mais **jamais** dans `drizzle.__drizzle_migrations`.
+- Pendant Sprint 0 + Sprint 1 J1, toutes les migrations ont été poussées via `pnpm db:migrate` (discipline PI-001 respectée) **sauf 0004** qui a été corrigée d'urgence via MCP (cause initiale de PI-001). Résultat : `apply_migration` MCP avait alimenté son tracker mais `pnpm db:migrate` n'a jamais touché celui de Supabase.
+
+**Pourquoi c'est un anti-pattern** :
+
+- Le dashboard Supabase et `list_migrations` MCP mentent silencieusement sur l'état réel de la BDD → audit faussé.
+- Sur un projet staging/prod neuf, si quelqu'un utilise `supabase db reset` ou se base sur `list_migrations` pour décider de l'état, il prend des décisions sur une vue incomplète.
+- En cas de drift entre les deux trackers, on ne peut plus savoir laquelle est la source-of-truth sans audit cross-table — ambiguïté toxique.
+
+**Résolution PI-002** : script `scripts/reconcile-supabase-schema-migrations.sql` exécuté **directement** contre `$DATABASE_DIRECT_URL` (PAS via MCP `apply_migration` qui créerait une 8ᵉ entrée parasite). 6 `INSERT … ON CONFLICT (version) DO NOTHING` + 1 `UPDATE` pour réaligner la version de 0004 sur le timestamp Drizzle (`20260523184539` au lieu de `20260519224539`). Le script est **idempotent** et **ré-exécutable** : en cas de future exception MCP qui re-désynchroniserait les trackers, on peut le re-lancer sans risque.
+
+État après réconciliation : `list_migrations` MCP retourne 7 entrées dans l'ordre lexicographique = ordre pédagogique 0000→0006. Schéma `public.*` strictement inchangé.
+
+**Règle préventive à respecter strictement post-PI-002** :
+
+> **Discipline dual-tracker sync** : la règle PI-001 reste la norme (`pnpm db:migrate` first via repo). En cas d'**exception ponctuelle** où `apply_migration` MCP doit être utilisé (urgence sécurité, fix advisor critique qu'on ne peut pas attendre un cycle CI), la PR de réconciliation Drizzle suivante DOIT **aussi** ré-aligner `supabase_migrations.schema_migrations` via un script idempotent type `scripts/reconcile-supabase-schema-migrations.sql` exécuté en `psql` direct. Si on s'autorise une 2ᵉ exception MCP, on relance ce script — il est idempotent par construction.
+
+**Détection préventive** : ajouter au futur job CI (Sprint 2+) un check `SELECT COUNT(*) FROM drizzle.__drizzle_migrations` = `SELECT COUNT(*) FROM supabase_migrations.schema_migrations` qui fail la PR si les deux trackers ne sont pas alignés. Ticket à créer en début de Sprint 2.
+
+**Application immédiate** : aucune — la règle est mémorisée dans ce fichier qui est lu par `CLAUDE.md` workspace, donc remontera dans tout contexte Cursor futur traitant de migrations BDD.
+
+---
+
 ## Done
 
 _(vide pour l'instant — chaque item résolu vient ici avec date + n° issue + n° PR de résolution)_
